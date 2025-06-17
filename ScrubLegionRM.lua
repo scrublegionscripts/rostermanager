@@ -100,24 +100,29 @@ SlashCmdList["SLRMDB"] = function()
     end
 end
 
-SLASH_SLRMDBC1 = "/slrmdbc"
-SlashCmdList["SLRMDBC"] = function()
+SLASH_SLRMCLEAR1 = "/slrmclear"
+SlashCmdList["SLRMCLEAR"] = function()
     ScrubLegionRMDB = {}
     print("ScrubLegionRMDB cleared.")
 end
 
-SLASH_SLRMINSTANCE1 = "/slrminstance"
-SlashCmdList["SLRMINSTANCE"] = function()
-    local isInstance, instanceType = IsInInstance()
-    local name, _, _, difficultyName, _, _, _, instanceID = GetInstanceInfo()
+SLASH_SLRMROSTER1 = "/slrmroster"
+SlashCmdList["SLRMROSTER"] = function()
+    if rosterDisplay:IsShown() then
+        rosterDisplay:Hide()
+    else
+        rosterDisplay:Show()
+    end
+end
 
-    print("Instance Check:")
-    print("Is Instance:", isInstance)
-    print("Instance Type:", instanceType)
-    print("Instance Name:", name)
-    print("Instance ID:", instanceID)
-    print("Difficulty:", difficultyName)
-    print("Should Enable:", ShouldEnableAddon())
+SLASH_SLRMHELP1 = "/slrmhelp"
+SlashCmdList["SLRMHELP"] = function()
+    print("ScrubLegionRM Commands:")
+    print("  /slrm - Toggle roster import window")
+    print("  /slrmdb - Shows current ScrubLegionRMDB contents")
+    print("  /slrmclear - Clear imported roster data")
+    print("  /slrmroster - Toggle roster display window")
+    print("  /slrmhelp - Show this help message")
 end
 
 -- Track last sent encounter to avoid spamming
@@ -384,37 +389,6 @@ eventFrame:SetScript("OnEvent", function()
         end
     end)
 end)
-
-SLASH_SLRMTEST1 = "/slrmtest"
-SlashCmdList["SLRMTEST"] = function()
-    if not ScrubLegionRMDB or not ScrubLegionRMDB.imported then
-        print("No roster data loaded")
-        return
-    end
-
-    -- Test with current encounter
-    local currentID = ScrubLegionRMDB.currentEncounterID or 16713 -- Default to first boss
-    local encounter = GetEncounterByID(ScrubLegionRMDB.imported, currentID)
-
-    print("TEST: Manual WeakAura update")
-    print("  - Current encounter:", encounter and encounter.name)
-    print("  - Selections:", encounter and #(encounter.selections or {}))
-
-    local data = {
-        encounter = encounter,
-        encounterID = currentID,
-        clear = false
-    }
-end
-
-SLASH_SLRMROSTER1 = "/slrmroster"
-SlashCmdList["SLRMROSTER"] = function()
-    if rosterDisplay:IsShown() then
-        rosterDisplay:Hide()
-    else
-        rosterDisplay:Show()
-    end
-end
 
 -- Update the DismissOverlay function
 function DismissOverlay()
