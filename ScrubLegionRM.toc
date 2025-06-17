@@ -1,4 +1,4 @@
-## Interface: 110105
+## Interface: 110107
 ## Title: Scrub Legion Roster Manager
 ## Notes: Scrub Legion Roster Manager
 ## Author: Lucker
