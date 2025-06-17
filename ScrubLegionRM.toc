@@ -1,0 +1,17 @@
+## Interface: 110105
+## Title: Scrub Legion Roster Manager
+## Notes: Scrub Legion Roster Manager
+## Author: Lucker
+## Version: 0.0.1
+## RequiredDeps:
+## X-Curse-Project-ID: 999999
+## SavedVariables: ScrubLegionRMDB
+## SavedVariablesPerCharacter: 
+
+json.lua
+ScrubLegionDB.lua
+RosterParse.lua
+RosterInput.lua
+LiberationOfUndermine.lua
+RaidFrameOverlay.lua
+ScrubLegionRM.lua
