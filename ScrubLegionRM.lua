@@ -256,16 +256,6 @@ local function OnEncounterStart(self, encounterID)
     end
 end
 
-local function OnEncounterEnd(self, encounterID)
-    -- Reset so we can trigger again for the next boss
-    if encounterID == lastSentEncounterID then
-        lastSentEncounterID = nil
-        ScrubLegionRMDB.currentEncounterID = nil
-        ScrubLegionRMRaidFrameOverlay = nil
-        print("ENCOUNTER_END: Reset lastSentEncounterID")
-    end
-end
-
 local function OnAddonLoaded(self, addonName)
     if addonName == "ScrubLegionRM" and RosterInputBox then
         if ScrubLegionRMDB.imported then
@@ -292,8 +282,6 @@ mainFrame:SetScript("OnEvent", function(self, event, ...)
         ScanForNearbyBosses()
     elseif event == "ENCOUNTER_START" then
         OnEncounterStart(self, ...)
-    elseif event == "ENCOUNTER_END" then
-        OnEncounterEnd(self, ...)
     end
 end)
 
