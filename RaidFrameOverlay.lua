@@ -93,18 +93,18 @@ function RaidFrameOverlay:ShowOverlay(frame, text)
         -- Create text with improved styling using default WoW font
         overlay.text = overlay:CreateFontString(nil, "OVERLAY")
         overlay.text:SetPoint("CENTER")
-        overlay.text:SetFont("Fonts\\FRIZQT__.TTF", 14, "THICKOUTLINE")
+        overlay.text:SetFont("fonts/arialn.ttf", 12, "OUTLINE")
         overlay.text:SetShadowOffset(1, -1)
         overlay.text:SetShadowColor(0, 0, 0, 1)
 
         -- Update the SetText function to handle colors
-        function overlay:SetText(text)
-            if text == "IN" then
+        function overlay:SetText(string)
+            if string == "IN" then
                 self.text:SetTextColor(0, 1, 0, 1)  -- Bright green
             else
                 self.text:SetTextColor(1, 0, 0, 1)  -- Bright red
             end
-            self.text:SetText(text)
+            self.text:SetText(string)
         end
 
         self.activeOverlays[frameName] = overlay

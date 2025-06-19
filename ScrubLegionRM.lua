@@ -57,12 +57,14 @@ rosterDisplay.scrollChild = CreateFrame("Frame")
 rosterDisplay.scrollFrame:SetScrollChild(rosterDisplay.scrollChild)
 rosterDisplay.scrollChild:SetSize(270, 400) -- Initial size
 
--- Add text to scroll child
+-- Update text settings in the roster display creation
 rosterDisplay.text = rosterDisplay.scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 rosterDisplay.text:SetPoint("TOPLEFT")
-rosterDisplay.text:SetPoint("TOPRIGHT")
+rosterDisplay.text:SetPoint("TOPRIGHT", -10, 0)  -- Add right padding
 rosterDisplay.text:SetJustifyH("LEFT")
 rosterDisplay.text:SetJustifyV("TOP")
+rosterDisplay.text:SetWordWrap(true)
+rosterDisplay.text:SetSpacing(2)  -- Add some line spacing
 
 -- Create a function to update scroll child height based on text
 function rosterDisplay:UpdateScrollChildHeight()
@@ -74,7 +76,7 @@ end
 
 -- Add a dismiss button to the roster display
 rosterDisplay.dismissButton = CreateFrame("Button", nil, rosterDisplay, "UIPanelButtonTemplate")
-rosterDisplay.dismissButton:SetSize(120, 24)
+rosterDisplay.dismissButton:SetSize(150, 24)
 rosterDisplay.dismissButton:SetPoint("BOTTOM", rosterDisplay, "BOTTOM", 0, 10)
 rosterDisplay.dismissButton:SetText("Dismiss Overlay/Roster")
 rosterDisplay.dismissButton:SetScript("OnClick", function()
@@ -148,7 +150,11 @@ end
 
 -- Helper to send both roster and encounterID to WeakAura
 local function SendRosterAndEncounter(rosterTable, encounterID)
-    if overlayDismissed then
+    -- Check if we should enable the addon first
+    if not ShouldEnableAddon() or overlayDismissed then
+        if rosterDisplay and rosterDisplay:IsShown() then
+            rosterDisplay:Hide()
+        end
         return
     end
 
@@ -156,23 +162,31 @@ local function SendRosterAndEncounter(rosterTable, encounterID)
     if encounter then
         -- Build display text
         local lines = {}
-        table.insert(lines, "Encounter: " .. (encounter.name or "Unknown"))
-
+        
+        -- Add encounter name with larger font and centered
+        table.insert(lines, string.format("|cff00ff00%s|r|r", encounter.name or "Unknown"))
+        
         -- Handle selected players
         local selectedCount = #(encounter.selections or {})
-        table.insert(lines, string.format("Selected (%d):", selectedCount))
-
+        table.insert(lines, string.format("\nSelected (%d):", selectedCount))
+        
         if encounter.selections then
-            local currentLine = {}
-            for i, sel in ipairs(encounter.selections) do
-                table.insert(currentLine, sel.fullName or "Unknown")
-                if #currentLine == 5 or i == #encounter.selections then
-                    table.insert(lines, table.concat(currentLine, ", "))
-                    currentLine = {}
-                end
+            local playerList = {}
+            for _, sel in ipairs(encounter.selections) do
+                -- Clean up class name and ensure it exists
+                local classUpper = sel.class:upper()
+                -- Create colored name with explicit color close
+                local coloredName = (CLASS_COLORS[classUpper] or "|cFFFFFFFF") .. 
+                                  (sel.fullName or "Unknown") .. "|r"
+                local baseName, _ = string.split("-", coloredName, 2)
+                
+                table.insert(playerList, baseName .. "|r")
             end
+            
+            -- Join all players with commas and let text wrapping handle the display
+            table.insert(lines, table.concat(playerList, ", "))
         end
-
+        
         rosterDisplay.text:SetText(table.concat(lines, "\n"))
         rosterDisplay:UpdateScrollChildHeight()
         rosterDisplay:Show()
@@ -195,10 +209,9 @@ local function ScanForNearbyBosses()
         local unit = "nameplate" .. i
         if UnitExists(unit) then
             local guid = UnitGUID(unit)
-            local name = UnitName(unit)
 
             if guid then
-                local unitType, _, _, _, _, npcID = string.split("-", guid)
+                local _, _, _, _, _, npcID = string.split("-", guid)
                 local npcIDNumber = tonumber(npcID)
 
                 if npcIDNumber and BossToEncounter[npcIDNumber] then
@@ -258,6 +271,12 @@ local function OnAddonLoaded(self, addonName)
         if ScrubLegionRMDB.imported then
             ProcessImportedRoster(ScrubLegionRMDB.imported)
         end
+
+        if not ShouldEnableAddon() then
+            if rosterDisplay and rosterDisplay:IsShown() then
+                rosterDisplay:Hide()
+            end
+        end
     end
 end
 
@@ -281,7 +300,7 @@ end)
 RosterInputBox = CreateRosterInput(mainFrame)
 
 local dismissButton = CreateFrame("Button", nil, mainFrame, "UIPanelButtonTemplate")
-dismissButton:SetSize(120, 24)
+dismissButton:SetSize(150, 24)
 dismissButton:SetPoint("BOTTOM", mainFrame, "BOTTOM", 0, 10)
 dismissButton:SetText("Dismiss Overlay/Roster")
 dismissButton:SetScript("OnClick", function()
