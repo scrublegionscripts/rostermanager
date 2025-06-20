@@ -5,6 +5,7 @@
 ## Version: 0.0.5
 ## RequiredDeps:
 ## X-Wago-ID: as3Dfg57
+## X-Curse-Project-ID: 1289625
 ## SavedVariables: ScrubLegionRMDB
 ## SavedVariablesPerCharacter: 
 
