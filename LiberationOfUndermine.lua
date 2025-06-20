@@ -9,7 +9,7 @@ BossToEncounter = {
     [230583] = 16717, -- Sprocketmonger
     [228458] = 16718, -- OaB
     [229953] = 16719, -- Mug'Zee
-    [239651] = 16720, -- Gallywix
+    [231075] = 16720, -- Gallywix
     -- Add more boss NPC IDs and their encounter IDs here
 }
 

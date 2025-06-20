@@ -1,6 +1,5 @@
 function RosterParse(rosterString)
     local decodedRosterString = C_EncodingUtil.DecodeBase64(rosterString)
-    print(decodedRosterString)
     if decodedRosterString then
         local data = json.decode(decodedRosterString)
         if data then
