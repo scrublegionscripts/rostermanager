@@ -247,7 +247,6 @@ end
 -- Boss detection logic
 local function OnEncounterStart(self, encounterID)
     -- Reset states for new encounter
-    overlayDismissed = false
     lastSentEncounterID = encounterID
 
     if ScrubLegionRMDB and ScrubLegionRMDB.imported then
@@ -400,7 +399,6 @@ end)
 -- Update the DismissOverlay function
 function DismissOverlay()
     overlayDismissed = true
-    -- print("DEBUG: Dismissing overlays and roster display")
 
     -- Use the HideAll method from RaidFrameOverlay
     if ScrubLegionRMRaidFrameOverlay then
