@@ -9,9 +9,6 @@ on:
     tags:
       - '**'
       
-permissions:
-  contents: write
-  packages: write
 # a workflow is built up as jobs, and within these jobs are steps
 jobs:
 
@@ -23,10 +20,10 @@ jobs:
 
     # specify the environment variables used by the packager, matching the secrets for the project on GitHub
     env:
-      # CF_API_KEY: ${{ secrets.CF_API_KEY }}
+      CF_API_KEY: ${{ secrets.CF_API_KEY }}
       # WOWI_API_TOKEN: ${{ secrets.WOWI_API_TOKEN }}
       WAGO_API_TOKEN: ${{ secrets.WAGO_API_TOKEN }}
-      GITHUB_OAUTH: ${{ secrets.GH_API_TOKEN }}  # this secret is pre-provided for the workflow and does not
+      GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}  # this secret is pre-provided for the workflow and does not
                                                  # need to be added yourself, we just reference it here.
 
     # "steps" holds a list of all the steps needed to package and release our AddOn
@@ -41,5 +38,3 @@ jobs:
       # once cloned, we just run the GitHub Action
       - name: Package and release
         uses: BigWigsMods/packager@v2
-        with:
-          args: -a as3Dfg57
