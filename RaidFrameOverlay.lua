@@ -100,9 +100,9 @@ function RaidFrameOverlay:ShowOverlay(frame, text)
         -- Update the SetText function to handle colors
         function overlay:SetText(string)
             if string == "IN" then
-                self.text:SetTextColor(0, 1, 0, 1)  -- Bright green
+                self.text:SetTextColor(0, 1, 0, 1) -- Bright green
             else
-                self.text:SetTextColor(1, 0, 0, 1)  -- Bright red
+                self.text:SetTextColor(1, 0, 0, 1) -- Bright red
             end
             self.text:SetText(string)
         end
@@ -209,10 +209,13 @@ function RaidFrameOverlay:UpdateAll(selectedLookup)
 
     -- Cell
     if IsUsingCell() then
-        for i = 1, 40 do
-            local frame = _G["CellRaidFrameMember" .. i]
-            if frame then
-                self:AddOverlayToFrame(frame, selectedLookup)
+        local CellRaidFramePattern = "CellRaidFrameHeader%dUnitButton%d"
+        for i = 1, 5 do
+            for j = 1, 5 do
+                local frame = _G[string.format(CellRaidFramePattern, i, j)]
+                if frame then
+                    self:AddOverlayToFrame(frame, selectedLookup)
+                end
             end
         end
     end
