@@ -118,7 +118,7 @@ function RaidFrameOverlay:ShowOverlay(frame, text)
     overlay:Show()
 end
 
-function RaidFrameOverlay:AddOverlayToFrame(frame, selectedLookup, currentRosterLookup)
+function RaidFrameOverlay:AddOverlayToFrame(frame, selectedLookup)
     if not frame or not frame.unit or not UnitExists(frame.unit) then return end
 
     local raidIndex = UnitInRaid(frame.unit)
