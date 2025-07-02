@@ -22,8 +22,8 @@ function ShouldEnableAddon()
         return false
     end
 
-    local _, _, _, _, _, _, _, instanceID = GetInstanceInfo()
+    local _, instanceType, difficulty, _, _, _, _, instanceID = GetInstanceInfo()
     -- print("DEBUG: Current Instance ID:", instanceID)
     
-    return instanceID == LIBERATION_OF_UNDERMINE_ID
+    return instanceID == LIBERATION_OF_UNDERMINE_ID and difficulty == 16 and instanceType == "raid"
 end
