@@ -1,3 +1,5 @@
+LIBERATION_OF_UNDERMINE_ID = 2769 -- Instance ID for Liberation of Undermine raid
+
 BossToEncounter = {
     -- [npcID] = encounterID,
     [225822] = 16713,
@@ -13,17 +15,14 @@ BossToEncounter = {
     -- Add more boss NPC IDs and their encounter IDs here
 }
 
-local LIBERATION_OF_UNDERMINE_ID = 2769 -- Instance ID for Liberation of Undermine raid
 
 function ShouldEnableAddon()
     local isInstance, instanceType = IsInInstance()
     if not isInstance or instanceType ~= "raid" then
-        -- print("DEBUG: Not in raid instance")
         return false
     end
 
-    local _, instanceType, difficulty, _, _, _, _, instanceID = GetInstanceInfo()
-    -- print("DEBUG: Current Instance ID:", instanceID)
+    local _, _, difficulty, _, _, _, _, instanceID = GetInstanceInfo()
     
     return instanceID == LIBERATION_OF_UNDERMINE_ID and difficulty == 16 and instanceType == "raid"
 end

@@ -1,411 +1,177 @@
-local mainFrame = CreateFrame("Frame", "ScrubLegionRosterImport", UIParent, "BasicFrameTemplateWithInset")
-mainFrame:SetSize(400, 400)
-mainFrame:SetPoint("TOPLEFT", UIParent, "CENTER", 0, 0)
-mainFrame.TitleBg:SetHeight(30)
-mainFrame.title = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-mainFrame.title:SetPoint("TOPLEFT", mainFrame.TitleBg, "TOPLEFT", 5, -3)
-mainFrame.title:SetText("SLRM")
-mainFrame:Hide()
+ScrubLegionRM = LibStub("AceAddon-3.0"):NewAddon("ScrubLegionRM", "AceConsole-3.0", "AceEvent-3.0")
 
-mainFrame:EnableMouse(true)
-mainFrame:SetMovable(true)
-mainFrame:RegisterForDrag("LeftButton")
+local defaults = {
+    profile = {
+        imported = nil,
+        rosterString = nil,
+        windowPos = {
+            x = nil,
+            y = nil,
+        }
+    }
+}
 
-mainFrame:SetScript("OnDragStart", function(self)
-    self:StartMoving()
-end)
+local AceGUI = LibStub("AceGUI-3.0")
 
-mainFrame:SetScript("OnDragStop", function(self)
-    self:StopMovingOrSizing()
-end)
-
-mainFrame:SetScript("OnShow", function()
-    PlaySound(808)
-    if RosterInputBox and ScrubLegionRMDB and ScrubLegionRMDB.rosterString then
-        RosterInputBox:SetText(ScrubLegionRMDB.rosterString)
-    elseif RosterInputBox then
-        RosterInputBox:SetText("Paste Roster String here...")
-    end
-end)
-
-mainFrame:SetScript("OnHide", function()
-    PlaySound(808)
-end)
-
--- Create text display frame
-local rosterDisplay = CreateFrame("Frame", "SLRMRosterDisplay", UIParent)
-rosterDisplay:SetSize(300, 400)
-rosterDisplay:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -20, -200)
-rosterDisplay:SetMovable(true)
-rosterDisplay:EnableMouse(true)
-rosterDisplay:RegisterForDrag("LeftButton")
-rosterDisplay:SetScript("OnDragStart", rosterDisplay.StartMoving)
-rosterDisplay:SetScript("OnDragStop", rosterDisplay.StopMovingOrSizing)
-
--- Add background
-rosterDisplay.bg = rosterDisplay:CreateTexture(nil, "BACKGROUND")
-rosterDisplay.bg:SetAllPoints()
-rosterDisplay.bg:SetColorTexture(0, 0, 0, 0.7)
-
--- Create scroll frame
-rosterDisplay.scrollFrame = CreateFrame("ScrollFrame", nil, rosterDisplay, "UIPanelScrollFrameTemplate")
-rosterDisplay.scrollFrame:SetPoint("TOPLEFT", 10, -30)
-rosterDisplay.scrollFrame:SetPoint("BOTTOMRIGHT", -30, 10)
-
--- Create scrollable content frame
-rosterDisplay.scrollChild = CreateFrame("Frame")
-rosterDisplay.scrollFrame:SetScrollChild(rosterDisplay.scrollChild)
-rosterDisplay.scrollChild:SetSize(270, 400) -- Initial size
-
--- Update text settings in the roster display creation
-rosterDisplay.text = rosterDisplay.scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-rosterDisplay.text:SetPoint("TOPLEFT")
-rosterDisplay.text:SetPoint("TOPRIGHT", -10, 0)  -- Add right padding
-rosterDisplay.text:SetJustifyH("LEFT")
-rosterDisplay.text:SetJustifyV("TOP")
-rosterDisplay.text:SetWordWrap(true)
-rosterDisplay.text:SetSpacing(2)  -- Add some line spacing
-
--- Create a function to update scroll child height based on text
-function rosterDisplay:UpdateScrollChildHeight()
-    local textWidth = self.text:GetWidth()
-    self.text:SetWidth(textWidth)                              -- Force text wrap calculation
-    local textHeight = self.text:GetHeight()
-    self.scrollChild:SetHeight(math.max(textHeight + 20, 400)) -- Add padding, minimum height of 400
+function ScrubLegionRM:OnInitialize()
+    self.db = LibStub("AceDB-3.0"):New("ScrubLegionRMDB", defaults, true)
+    -- Called when the addon is loaded
+    self:RegisterChatCommand("slrm", "slrm")
+    self:RegisterChatCommand("slrmdb", "slrmdb")
+    self:RegisterChatCommand("slrmclear", "slrmclear")
+    self:RegisterChatCommand("slrmtest", "slrmtest")
+    self:RegisterChatCommand("slrmhelp", "slrmhelp")
+    print("ScrubLegionRM initialized. Type /slrm to open the main window.")
 end
 
--- Add a dismiss button to the roster display
-rosterDisplay.dismissButton = CreateFrame("Button", nil, rosterDisplay, "UIPanelButtonTemplate")
-rosterDisplay.dismissButton:SetSize(150, 24)
-rosterDisplay.dismissButton:SetPoint("BOTTOM", rosterDisplay, "BOTTOM", 0, 10)
-rosterDisplay.dismissButton:SetText("Dismiss Overlay/Roster")
-rosterDisplay.dismissButton:SetScript("OnClick", function()
-    DismissOverlay()
-end)
-
-table.insert(UISpecialFrames, "ScrubLegionRosterImport")
-
-SLASH_SLRM1 = "/slrm"
-SlashCmdList["SLRM"] = function()
-    if mainFrame:IsShown() then
-        mainFrame:Hide()
+function ScrubLegionRM:RestorePosition()
+    if self.db.profile.windowPos.x and self.db.profile.windowPos.y then
+        -- Restore the position of the main window
+        self.mainFrame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", self.db.profile.windowPos.x, self.db.profile.windowPos.y)
     else
-        mainFrame:Show()
+        -- Default position if no previous position is saved
+        self.mainFrame:SetPoint("CENTER", UIParent, "CENTER")
     end
 end
 
-SLASH_SLRMDB1 = "/slrmdb"
-SlashCmdList["SLRMDB"] = function()
-    print("Current ScrubLegionRMDB contents:")
-    for k, v in pairs(ScrubLegionRMDB) do
-        print(k .. ": " .. tostring(v))
-    end
-end
-
-SLASH_SLRMCLEAR1 = "/slrmclear"
-SlashCmdList["SLRMCLEAR"] = function()
-    ScrubLegionRMDB = {}
-    print("ScrubLegionRMDB cleared.")
-end
-
-SLASH_SLRMROSTER1 = "/slrmroster"
-SlashCmdList["SLRMROSTER"] = function()
-    if rosterDisplay:IsShown() then
-        rosterDisplay:Hide()
+function ScrubLegionRM:RestoreChild(editBox)
+    if self.db.profile.rosterString then
+        -- Restore the text in the edit box
+        editBox:SetText(self.db.profile.rosterString)
     else
-        rosterDisplay:Show()
+        -- Default text if no previous roster string is saved
+        editBox:SetText("")
     end
 end
 
-SLASH_SLRMHELP1 = "/slrmhelp"
-SlashCmdList["SLRMHELP"] = function()
-    print("ScrubLegionRM Commands:")
-    print("  /slrm - Toggle roster import window")
-    print("  /slrmdb - Shows current ScrubLegionRMDB contents")
-    print("  /slrmclear - Clear imported roster data")
-    print("  /slrmroster - Toggle roster display window")
-    print("  /slrmhelp - Show this help message")
-end
-
--- Track last sent encounter to avoid spamming
-local lastSentEncounterID = nil
-local lastEncounteredBossID = nil
-local overlayDismissed = false
-
-local function GetEncounterByID(rosterTable, encounterID)
-    if not rosterTable or not rosterTable.encounters then return nil end
-
-    for _, encounter in ipairs(rosterTable.encounters) do
-        if encounter.id == encounterID then
-            return {
-                id = encounter.id,
-                name = encounter.name,
-                selections = encounter.selections or {},
-                unselected = encounter.unselected or {}
-            }
-        end
+function ScrubLegionRM:ShowMainWindow()
+    print("ShowMainWindow called - Starting window creation")
+    
+    if self.mainFrame then
+        print("Existing mainFrame found - Releasing...")
+        AceGUI:Release(self.mainFrame)
+        self.mainFrame = nil
+        print("MainFrame released")
     end
-    return nil
-end
 
--- Helper to send both roster and encounterID to WeakAura
-local function SendRosterAndEncounter(rosterTable, encounterID)
-    -- Check if we should enable the addon first
-    if not ShouldEnableAddon() or overlayDismissed then
-        if rosterDisplay and rosterDisplay:IsShown() then
-            rosterDisplay:Hide()
-        end
+    -- Create new window using AceGUI
+    print("Creating new AceGUI Frame")
+    self.mainFrame = AceGUI:Create("Frame")
+    if not self.mainFrame then
+        print("ERROR: Failed to create mainFrame!")
         return
     end
+    
+    -- Set frame properties
+    self.mainFrame:SetTitle("ScrubLegion Roster Manager")
+    self.mainFrame:SetLayout("Flow")
+    self.mainFrame:SetWidth(400)
+    self.mainFrame:SetHeight(400)
 
-    local encounter = GetEncounterByID(rosterTable, encounterID)
-    if encounter then
-        -- Build display text
-        local lines = {}
-        
-        -- Add encounter name with larger font and centered
-        table.insert(lines, string.format("|cff00ff00%s|r|r", encounter.name or "Unknown"))
-        
-        -- Handle selected players
-        local selectedCount = #(encounter.selections or {})
-        table.insert(lines, string.format("\nSelected (%d):", selectedCount))
-        
-        if encounter.selections then
-            local playerList = {}
-            for _, sel in ipairs(encounter.selections) do
-                -- Clean up class name and ensure it exists
-                local classUpper = sel.class:upper()
-                -- Create colored name with explicit color close
-                local coloredName = (CLASS_COLORS[classUpper] or "|cFFFFFFFF") .. 
-                                  (sel.fullName or "Unknown") .. "|r"
-                local baseName, _ = string.split("-", coloredName, 2)
-                
-                table.insert(playerList, baseName .. "|r")
+    ScrubLegionRM:RestorePosition()
+
+    -- Set OnClose callback to save position
+    self.mainFrame:SetCallback("OnClose", function(widget)
+        print("OnClose callback triggered")
+        -- Get position relative to UIParent TOPLEFT
+        local frame = widget.frame
+        local scale = frame:GetScale()
+        local x, y = frame:GetLeft(), frame:GetTop()
+        x = x * scale
+        y = y * scale
+        -- Save position
+        self.db.profile.windowPos.x = x
+        self.db.profile.windowPos.y = y
+        print(string.format("Saving position: x=%s, y=%s", tostring(x), tostring(y)))
+        AceGUI:Release(widget)
+        self.mainFrame = nil
+    end)
+
+    self.mainFrame:SetTitle("SLRM")
+    self.mainFrame:SetStatusText("ScrubLegionRM")
+    self.mainFrame:SetLayout("Flow")
+    self.mainFrame:SetWidth(400)
+    self.mainFrame:SetHeight(400)
+
+
+    local editBox = AceGUI:Create("MultiLineEditBox")
+    editBox:SetLabel("Roster String")
+    editBox:SetFullWidth(true)
+    editBox:SetHeight(300)
+
+    self.mainFrame:AddChild(editBox)
+    
+    ScrubLegionRM:RestoreChild(editBox)
+
+    editBox:SetCallback("OnEnterPressed", function(_, _, text)
+        -- Handle text input
+        if text and text ~= "" then
+            if RosterParse(text, self.db.profile) then
+                print("Roster data imported successfully.")
+            else
+                print("Failed to import roster data.")
             end
-            
-            -- Join all players with commas and let text wrapping handle the display
-            table.insert(lines, table.concat(playerList, ", "))
-        end
-        
-        rosterDisplay.text:SetText(table.concat(lines, "\n"))
-        rosterDisplay:UpdateScrollChildHeight()
-        rosterDisplay:Show()
-    end
-
-    -- Update raid frame overlays if available
-    if ScrubLegionRMRaidFrameOverlay and encounter then
-        local selectedLookup = ScrubLegionRMRaidFrameOverlay:BuildSelectedLookup(encounter)
-        ScrubLegionRMRaidFrameOverlay:UpdateAll(selectedLookup)
-    end
-end
-
-local function ScanForNearbyBosses()
-    if not ShouldEnableAddon() then
-        -- print("DEBUG: Not in correct zone")
-        return false
-    end
-
-    for i = 1, 40 do
-        local unit = "nameplate" .. i
-        if UnitExists(unit) then
-            local guid = UnitGUID(unit)
-
-            if guid then
-                local _, _, _, _, _, npcID = string.split("-", guid)
-                local npcIDNumber = tonumber(npcID)
-
-                if npcIDNumber and BossToEncounter[npcIDNumber] then
-                    local encounterID = BossToEncounter[npcIDNumber]
-                    -- print("DEBUG: Found boss!", name, "->", encounterID)
-
-                    -- Only update if it's a new encounter
-                    if encounterID ~= lastEncounteredBossID then
-                        -- print("DEBUG: New boss encounter detected")
-                        lastEncounteredBossID = encounterID
-                        lastSentEncounterID = encounterID
-                        overlayDismissed = false
-
-                        if ScrubLegionRMDB and ScrubLegionRMDB.imported then
-                            ScrubLegionRMDB.currentEncounterID = encounterID
-                            local encounter = GetEncounterByID(ScrubLegionRMDB.imported, encounterID)
-                            if encounter then
-                                -- print("DEBUG: Sending roster for encounter:", encounter.name)
-                                SendRosterAndEncounter(ScrubLegionRMDB.imported, encounterID)
-                                return true
-                            end
-                        end
-                    else
-                        -- print("DEBUG: Already tracking this boss encounter")
-                    end
-                end
-            end
-        end
-    end
-    return false
-end
-
--- Boss detection logic
-local function OnEncounterStart(self, encounterID)
-    -- Reset states for new encounter
-    lastSentEncounterID = encounterID
-
-    if ScrubLegionRMDB and ScrubLegionRMDB.imported then
-        ScrubLegionRMDB.currentEncounterID = encounterID
-        SendRosterAndEncounter(ScrubLegionRMDB.imported, encounterID)
-    end
-end
-
-local function OnAddonLoaded(self, addonName)
-    if addonName == "ScrubLegionRM" and RosterInputBox then
-        if ScrubLegionRMDB.imported then
-            ProcessImportedRoster(ScrubLegionRMDB.imported)
-        end
-
-        if not ShouldEnableAddon() then
-            if rosterDisplay and rosterDisplay:IsShown() then
-                rosterDisplay:Hide()
-            end
-        end
-    end
-end
-
-mainFrame:RegisterEvent("ADDON_LOADED")
-mainFrame:RegisterEvent("NAME_PLATE_UNIT_ADDED")
-mainFrame:RegisterEvent("ENCOUNTER_START")
-mainFrame:RegisterEvent("ENCOUNTER_END")
-
-mainFrame:SetScript("OnEvent", function(self, event, ...)
-    if event == "ADDON_LOADED" then
-        OnAddonLoaded(self, ...)
-    elseif event == "NAME_PLATE_UNIT_ADDED" then
-        ScanForNearbyBosses()
-    elseif event == "ENCOUNTER_START" then
-        OnEncounterStart(self, ...)
-    end
-end)
-
-RosterInputBox = CreateRosterInput(mainFrame)
-
-local dismissButton = CreateFrame("Button", nil, mainFrame, "UIPanelButtonTemplate")
-dismissButton:SetSize(150, 24)
-dismissButton:SetPoint("BOTTOM", mainFrame, "BOTTOM", 0, 10)
-dismissButton:SetText("Dismiss Overlay/Roster")
-dismissButton:SetScript("OnClick", function()
-    DismissOverlay()
-end)
-
-
-
-print("SLRM successfully loaded!")
-
-function ProcessImportedRoster(rosterTable)
-    if type(rosterTable) ~= "table" then
-        print("No valid roster data to process.")
-        return
-    end
-
-    -- Build a lookup table for character_id -> "Name-Realm"
-    local idToNameRealm = {}
-    if rosterTable.signups then
-        for _, signup in ipairs(rosterTable.signups) do
-            if signup.character and signup.character.id and signup.character.name and signup.character.realm then
-                idToNameRealm[signup.character.id] = signup.character.name .. "-" .. signup.character.realm
-            end
-        end
-    end
-
-    -- For each encounter, split selections into selected and unselected, and add fullName
-    if rosterTable.encounters then
-        for _, encounter in ipairs(rosterTable.encounters) do
-            local selected = {}
-            local unselected = {}
-            if encounter.selections then
-                for _, selection in ipairs(encounter.selections) do
-                    if selection.character_id then
-                        local fullName = idToNameRealm[selection.character_id] or
-                            ("Unknown(" .. tostring(selection.character_id) .. ")")
-                        local name, realm = fullName:match("^(.-)%-(.+)$")
-                        if name and realm then
-                            fullName = ScrubLegionRMRaidFrameOverlay:NormalizeFullName(name, realm)
-                        end
-                        local entry = {
-                            character_id = selection.character_id,
-                            fullName = fullName,
-                            class = selection.class,
-                            role = selection.role,
-                            selected = selection.selected
-                        }
-                        if selection.selected then
-                            table.insert(selected, entry)
-                        else
-                            table.insert(unselected, entry)
-                        end
-                    end
-                end
-            end
-            encounter.selections = selected
-            encounter.unselected = unselected
-        end
-    else
-        print("No encounters found in roster data.")
-    end
-    -- No longer auto-sending to WeakAura here; only send on boss detection/encounter start
-    for _, encounter in ipairs(rosterTable.encounters or {}) do
-        print("Roster encounter:", encounter.id, encounter.name)
-    end
-end
-
-local function EnableAddonFeatures()
-    -- Place your main addon initialization code here
-    mainFrame:Show()
-    print("SLRM enabled in this instance!")
-end
-
-local function DisableAddonFeatures()
-    mainFrame:Hide()
-    -- print("SLRM disabled in this zone.")
-end
-
-local function CheckZoneAndToggleAddon()
-    if ShouldEnableAddon() then
-        EnableAddonFeatures()
-    else
-        DisableAddonFeatures()
-    end
-end
-
-local zoneFrame = CreateFrame("Frame")
-zoneFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-zoneFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
-zoneFrame:SetScript("OnEvent", function(self, event)
-    CheckZoneAndToggleAddon()
-end)
-
--- Modify the event handler for GROUP_ROSTER_UPDATE
-local eventFrame = CreateFrame("Frame")
-eventFrame:RegisterEvent("GROUP_ROSTER_UPDATE")
-eventFrame:SetScript("OnEvent", function()
-    C_Timer.After(0.1, function()
-        if ScrubLegionRMRaidFrameOverlay and lastSentEncounterID ~= nil and not overlayDismissed then
-            local encounter = GetEncounterByID(ScrubLegionRMDB.imported, lastSentEncounterID)
-            if encounter then
-                local selected = ScrubLegionRMRaidFrameOverlay:BuildSelectedLookup(encounter)
-                ScrubLegionRMRaidFrameOverlay:UpdateAll(selected)
-            end
+        else
+            print("No roster data provided.")
         end
     end)
-end)
 
--- Update the DismissOverlay function
-function DismissOverlay()
-    overlayDismissed = true
+end
 
-    -- Use the HideAll method from RaidFrameOverlay
-    if ScrubLegionRMRaidFrameOverlay then
-        ScrubLegionRMRaidFrameOverlay:HideAll()
+function ScrubLegionRM:OnEnable()
+    -- Called when the addon is enabled
+    if ShouldEnableAddon() then
+        print("ScrubLegionRM is enabled for this raid instance.")
+        self:ShowMainWindow()
+    else
+        print("ScrubLegionRM is not enabled for this raid instance.")
     end
+end
 
-    if rosterDisplay and type(rosterDisplay.Hide) == "function" then
-        rosterDisplay:Hide()
+function ScrubLegionRM:OnDisable()
+    -- Called when the addon is disabled
+    print("ScrubLegionRM is disabled.")
+end
+
+function ScrubLegionRM:slrm()
+    print("slrm command executed.")
+    self:ShowMainWindow()
+end
+
+function ScrubLegionRM:slrmdb()
+    print("ScrubLegionRM database command executed.")
+    -- Add your command handling logic here
+    if self.db then
+        DeepPrint(self.db.profile)
+    else
+        print("No imported roster data found.")
     end
+end
+
+function ScrubLegionRM:slrmclear()
+    print("ScrubLegionRM clear command executed.")
+    -- Add your command handling logic here
+    if self.db then
+        self.db.profile.imported = nil
+        self.db.profile.rosterString = nil
+        self.db.profile.windowPos.x = nil
+        self.db.profile.windowPos.y = nil
+        print("ScrubLegionRM database cleared.")
+    else
+        print("No database to clear.")
+    end
+end
+
+function ScrubLegionRM:slrmtest()
+    print("ScrubLegionRM test command executed.")
+    -- Add your command handling logic here
+end
+
+function ScrubLegionRM:slrmhelp()
+    print("ScrubLegionRM help command executed.")
+    print("Available commands:")
+    print("/slrm - Show the main window")
+    print("/slrmdb - Show the current database contents")
+    print("/slrmclear - Clear the current database")
+    print("/slrmtest - Run a test command")
 end

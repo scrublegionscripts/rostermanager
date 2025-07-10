@@ -1,4 +1,4 @@
-function RosterParse(rosterString)
+function RosterParse(rosterString, ScrubLegionRMDB)
     local decodedRosterString = C_EncodingUtil.DecodeBase64(rosterString)
     if decodedRosterString then
         local data = json.decode(decodedRosterString)
@@ -6,7 +6,6 @@ function RosterParse(rosterString)
             ScrubLegionRMDB.imported = data
             ScrubLegionRMDB.rosterString = rosterString -- Save the raw string!
             print("Roster imported successfully!")
-            ProcessImportedRoster(data)
             return true
         else
             print("Failed to decode roster data.")
