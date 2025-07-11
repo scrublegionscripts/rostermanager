@@ -23,10 +23,11 @@ Libs\AceConfig-3.0\AceConfig-3.0.xml
 
 # Core Addon Files
 json.lua
+LiberationOfUndermine.lua
 Utils.lua
 ClassColors.lua
 RosterParse.lua
-RosterInput.lua
+OverlayManager.lua
 
 # Main Addon File
 ScrubLegionRM.lua

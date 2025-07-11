@@ -14,15 +14,3 @@ BossToEncounter = {
     [231075] = 16720, -- Gallywix
     -- Add more boss NPC IDs and their encounter IDs here
 }
-
-
-function ShouldEnableAddon()
-    local isInstance, instanceType = IsInInstance()
-    if not isInstance or instanceType ~= "raid" then
-        return false
-    end
-
-    local _, _, difficulty, _, _, _, _, instanceID = GetInstanceInfo()
-    
-    return instanceID == LIBERATION_OF_UNDERMINE_ID and difficulty == 16 and instanceType == "raid"
-end
