@@ -1,7 +1,6 @@
 Utils = Utils or {}
 
 function Utils:DeepPrint(e)
-    print("Executing DeepPrint... type(e):", type(e))
     if type(e) == "table" then
         for k, v in pairs(e) do
             print("Key:", k)
@@ -28,17 +27,25 @@ function Utils:ShouldEnableAddon()
     end
 
     local _, _, difficulty, _, _, _, _, instanceID = GetInstanceInfo()
-    
+
     return instanceID == LIBERATION_OF_UNDERMINE_ID and difficulty == 16 and instanceType == "raid"
 end
 
-function Utils:IsBossDetected()
+function Utils:IsBossDetected(lastDetectedEncounter)
     for i = 1, 40 do
         local unitID = "nameplate" .. i
         if UnitExists(unitID) then
-            local npcID = UnitGUID(unitID):match("-(%d+)-%x+$")
-            if npcID and BossToEncounter[tonumber(npcID)] then
-                return true, npcID, BossToEncounter[tonumber(npcID)]
+            local guid = UnitGUID(unitID)
+            if guid then
+                local _, _, _, _, _, npcID = string.split("-", guid)
+                if npcID and BossToEncounter[tonumber(npcID)] then
+                    local isNewBoss = BossToEncounter[tonumber(npcID)] ~= lastDetectedEncounter
+                    if isNewBoss then
+                        return true, npcID, BossToEncounter[tonumber(npcID)]
+                    else
+                        return false, nil, nil
+                    end
+                end
             end
         end
     end

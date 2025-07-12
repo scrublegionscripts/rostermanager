@@ -2,8 +2,8 @@ LIBERATION_OF_UNDERMINE_ID = 2769 -- Instance ID for Liberation of Undermine rai
 
 BossToEncounter = {
     -- [npcID] = encounterID,
-    [225822] = 16713,
-    [225821] = 16713, -- Example: Vexie and the Geargrinders
+    [225822] = 16713, -- The Geargrinder
+    [225821] = 16713, -- Vexie 
     [229181] = 16714, -- CoC
     [229177] = 16714, -- CoC
     [228652] = 16715, -- Rik Reverb

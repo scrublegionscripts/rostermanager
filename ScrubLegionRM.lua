@@ -172,7 +172,7 @@ function ScrubLegionRM:SetCallBacks(window, name)
     end
 
     -- Add OnClose callback
-    window:SetCallback("OnClose", function(widget, name)
+    window:SetCallback("OnClose", function()
         -- Get final position before closing
         local left = frame:GetLeft()
         local bottom = frame:GetBottom()
@@ -190,7 +190,6 @@ function ScrubLegionRM:SetCallBacks(window, name)
         end
 
         if name and name == "RosterDisplayWindow" then
-            print("Closing window: " .. name)
             addon.db.profile.wasOverlayDismissed = true
             OverlayManager:HideAllOverlays()
         end
@@ -242,7 +241,7 @@ function ScrubLegionRM:ShowMainWindow()
     editBoxContainer:SetLayout("Fill")
     editBoxContainer:SetFullWidth(true)
     -- Use SetHeight with percentage of the total height instead of SetRelativeHeight
-    local editBoxHeight = height * 0.5 -- 85% of window height
+    local editBoxHeight = height * 0.5 -- 50% of window height
     editBoxContainer:SetHeight(editBoxHeight)
     mainContainer:AddChild(editBoxContainer)
 
@@ -312,10 +311,12 @@ function ScrubLegionRM:ShowRosterDisplay(npcID, encounterID)
     end
 
     self.rosterWindow = AceGUI:Create("Frame")
-    self.rosterWindow:SetTitle("Roster for " .. (encounterID and encounterID or "Unknown"))
-    self.rosterWindow:SetStatusText("Roster Display for Boss: " .. (npcID or "Unknown"))
+    self.rosterWindow:SetTitle(OverlayManager:GetBossName(encounterID, self.db.profile.imported))
+    self.rosterWindow:SetStatusText("Roster Display for Boss: " .. (encounterID or "Unknown"))
     self.rosterWindow:SetLayout("Fill")
-    self:SetCallBacks(self.rosterWindow)
+    self.rosterWindow:SetWidth(self.db.profile.windowPos.width or 600)
+    self.rosterWindow:SetHeight(self.db.profile.windowPos.height or 400)
+    self:SetCallBacks(self.rosterWindow, "RosterDisplayWindow")
     self:ApplyWindowSettings(self.rosterWindow)
 
     local rosterScroll = AceGUI:Create("ScrollFrame")
@@ -326,13 +327,25 @@ function ScrubLegionRM:ShowRosterDisplay(npcID, encounterID)
     local rosterText = AceGUI:Create("Label")
     rosterText:SetFontObject(GameFontNormal)
     rosterText:SetFullWidth(true)
-    rosterText:SetText(OverlayManager:CreateRosterDisplay(encounterID, self.db.profile.imported))
+    local text, selectedPlayers = OverlayManager:CreateRosterDisplay(encounterID, self.db.profile.imported)
+    rosterText:SetText(text or "No roster data available.")
 
     rosterScroll:AddChild(rosterText)
 
     self.rosterWindow:AddChild(rosterScroll)
 
     self.rosterWindow:Show()
+
+    OverlayManager:ShowOverlays(selectedPlayers)
+
+    self:RegisterEvent("GROUP_ROSTER_UPDATE", function()
+        C_Timer.After(0.1, function()
+            if self.db.profile.wasOverlayDismissed == false and self.db.profile.lastDetectedEncounter ~= nil then
+                OverlayManager:HideAllOverlays()
+                OverlayManager:ShowOverlays(selectedPlayers)
+            end
+        end)
+    end)
 end
 
 function ScrubLegionRM:OnEnable()
@@ -343,8 +356,8 @@ function ScrubLegionRM:OnEnable()
 
         self:RegisterEvent("NAME_PLATE_UNIT_ADDED", function()
             local isBossDetected, npcID, encounterID = Utils:IsBossDetected()
-            if isBossDetected and not self.db.profile.wasOverlayDismissed then
-                if npcID ~= self.db.profile.lastDetectedBoss then
+            if isBossDetected then
+                if encounterID ~= self.db.profile.lastDetectedEncounter then
                     print("Boss detected! NPC ID:", npcID, "Encounter ID:", encounterID)
                     ScrubLegionRM:ShowRosterDisplay(npcID, encounterID)
                     self.db.profile.lastDetectedBoss = npcID
