@@ -2,7 +2,7 @@
 ## Title: Scrub Legion Roster Manager
 ## Notes: Scrub Legion Roster Manager
 ## Author: Lucker
-## Version: 0.0.5
+## Version: 0.0.18
 ## RequiredDeps:
 ## X-Wago-ID: as3Dfg57
 ## X-Curse-Project-ID: 1289625
