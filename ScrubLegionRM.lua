@@ -424,6 +424,7 @@ function ScrubLegionRM:slrmhelp()
     print("Available commands:")
     print("/slrm - Show the main window")
     print("/slrmdb - Show the current database contents")
+    print("/roster - Show the roster display for the last detected boss")
     print("/slrmclear - Clear the current database")
     print("/slrmtest - Run a test command")
     return true
