@@ -39,12 +39,7 @@ function Utils:IsBossDetected(lastDetectedEncounter)
             if guid then
                 local _, _, _, _, _, npcID = string.split("-", guid)
                 if npcID and BossToEncounter[tonumber(npcID)] then
-                    local isNewBoss = BossToEncounter[tonumber(npcID)] ~= lastDetectedEncounter
-                    if isNewBoss then
-                        return true, npcID, BossToEncounter[tonumber(npcID)]
-                    else
-                        return false, nil, nil
-                    end
+                    return true, npcID, BossToEncounter[tonumber(npcID)]
                 end
             end
         end
