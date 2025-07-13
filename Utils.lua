@@ -31,7 +31,7 @@ function Utils:ShouldEnableAddon()
     return instanceID == LIBERATION_OF_UNDERMINE_ID and difficulty == 16 and instanceType == "raid"
 end
 
-function Utils:IsBossDetected(lastDetectedEncounter)
+function Utils:IsBossDetected()
     for i = 1, 40 do
         local unitID = "nameplate" .. i
         if UnitExists(unitID) then
