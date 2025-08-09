@@ -27,6 +27,7 @@ function ScrubLegionRM:OnInitialize()
     -- Called when the addon is loaded
     self:RegisterChatCommand("slrm", "slrm")
     self:RegisterChatCommand("slrmclear", "slrmclear")
+    self:RegisterChatCommand("slrmtest", "slrmtest")
     print("ScrubLegionRM initialized. Type /slrm to open the main window.")
 
     self.db.profile.lastDetectedInstanceID = LIBERATION_OF_UNDERMINE_ID
@@ -171,7 +172,7 @@ function ScrubLegionRM:OnEnable()
                 if encounterID ~= self.db.profile.lastDetectedEncounter then
                     if not UnitAffectingCombat("player") then
                         print("Boss detected! NPC ID:", npcID, "Encounter ID:", encounterID)
-                        ScrubLegionRM:ShowMainWindow(npcID, encounterID)
+                        ScrubLegionRM:ShowMainWindow(encounterID)
                         self.db.profile.lastDetectedBoss = npcID
                         self.db.profile.lastDetectedEncounter = encounterID
                     else
@@ -180,7 +181,7 @@ function ScrubLegionRM:OnEnable()
                         -- We are in combat, and need to delay the window opening
                         self:RegisterEvent("PLAYER_REGEN_ENABLED", function()
                             self:UnregisterEvent("PLAYER_REGEN_ENABLED")
-                            ScrubLegionRM:ShowMainWindow(npcID, encounterID)
+                            ScrubLegionRM:ShowMainWindow(encounterID)
                             self.db.profile.lastDetectedBoss = npcID
                             self.db.profile.lastDetectedEncounter = encounterID
                         end)
@@ -196,7 +197,7 @@ function ScrubLegionRM:OnDisable()
     print("ScrubLegionRM is disabled.")
 end
 
-function ScrubLegionRM:ShowMainWindow(npcID, encounterID)
+function ScrubLegionRM:ShowMainWindow(encounterID)
     local window = AceGUI:Create("Frame")
     window:SetTitle("Scrub Legion RM")
     window:SetStatusText("Encounter ID: " .. (encounterID or "Unknown"))
@@ -252,15 +253,12 @@ end
 
 function ScrubLegionRM:BuildBossTabs(window, bossTabsObject, editBox, instanceID, encounterID)
     local bossList = InstanceToBosses[instanceID] or {}
-
-    print("Building boss tabs for instance ID:", instanceID, "with bosses:", table.concat(bossList, ", "))
     if not bossList or bossList == {} then
         return false
     end
 
     local allTabs = {}
     for _, bossID in pairs(bossList) do
-        print(bossID, "->", EncounterToName[bossID])
         local bossName = EncounterToName[bossID] or "Unknown Boss"
         table.insert(allTabs, {
             value = bossID,
@@ -288,4 +286,17 @@ end
 function ScrubLegionRM:slrmclear()
     self.db.profile.customNotes = {}
     print("Custom notes cleared.")
+end
+
+
+function ScrubLegionRM:slrmtest(input)
+    local instanceID, encounterID = strsplit(" ", input)
+    
+    -- Convert string arguments to numbers
+    local instID = tonumber(instanceID)
+    local encID = tonumber(encounterID)
+    
+    self.db.profile.lastDetectedInstanceID = (instID or self.db.profile.lastDetectedInstanceID)
+    self:ShowMainWindow((encID or self.db.profile.lastDetectedEncounter))
+    return true
 end

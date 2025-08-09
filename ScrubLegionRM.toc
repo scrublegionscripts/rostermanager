@@ -1,8 +1,8 @@
-## Interface: 110107
-## Title: Scrub Legion Roster Manager
-## Notes: Scrub Legion Roster Manager
+## Interface: 110200
+## Title: Scrub Legion RM
+## Notes: Scrub Legion RM
 ## Author: Lucker
-## Version: 0.0.18
+## Version: 0.1.1
 ## RequiredDeps:
 ## X-Wago-ID: as3Dfg57
 ## X-Curse-Project-ID: 1289625
