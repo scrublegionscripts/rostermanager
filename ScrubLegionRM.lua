@@ -2,8 +2,6 @@ ScrubLegionRM = LibStub("AceAddon-3.0"):NewAddon("ScrubLegionRM", "AceConsole-3.
 
 local defaults = {
     profile = {
-        imported = nil,
-        rosterString = nil,
         windowPos = {
             point = nil,
             relativeTo = nil,
@@ -15,7 +13,10 @@ local defaults = {
         },
         lastDetectedBoss = nil,
         lastDetectedEncounter = nil,
-        wasOverlayDismissed = false
+        selectedEncounterID = nil,
+        wasOverlayDismissed = false,
+        customNotes = {},
+        defaultNotes = "Reminder: \nCheck Talents, import MDT groups, remind people of unique assignments."
     }
 }
 
@@ -25,12 +26,10 @@ function ScrubLegionRM:OnInitialize()
     self.db = LibStub("AceDB-3.0"):New("ScrubLegionRMDB", defaults, true)
     -- Called when the addon is loaded
     self:RegisterChatCommand("slrm", "slrm")
-    self:RegisterChatCommand("slrmdb", "slrmdb")
     self:RegisterChatCommand("slrmclear", "slrmclear")
-    self:RegisterChatCommand("slrmtest", "slrmtest")
-    self:RegisterChatCommand("roster", "showRoster")
-    self:RegisterChatCommand("slrmhelp", "slrmhelp")
     print("ScrubLegionRM initialized. Type /slrm to open the main window.")
+
+    self.db.profile.lastDetectedInstanceID = LIBERATION_OF_UNDERMINE_ID
 end
 
 function ScrubLegionRM:ApplyWindowSettings(window)
@@ -68,39 +67,6 @@ function ScrubLegionRM:ApplyWindowSettings(window)
         window:ClearAllPoints()
         window:SetPoint("CENTER", UIParent, "CENTER")
         print("No valid window position data, centered window")
-    end
-end
-
-function ScrubLegionRM:ProcessRosterString(statusLabel, text)
-    if not text or text == "" then
-        statusLabel:SetText("|cFFFF0000Error: No roster string provided|r")
-        print("Error: No roster string provided")
-        return
-    end
-
-    -- Save the roster string to the database
-    self.db.profile.rosterString = text
-
-    -- Attempt to parse the roster string
-    local success = RosterParse(text, self.db.profile)
-
-    if success then
-        statusLabel:SetText("|cFF00FF00Roster imported successfully!|r")
-    else
-        -- Don't try to set text on the edit box, use statusLabel instead
-        statusLabel:SetText("|cFFFF0000Failed to parse roster data. Check your input.|r")
-        print("Failed to parse roster data.")
-    end
-end
-
-function ScrubLegionRM:RestoreData(editBox)
-    if self.db.profile.imported and self.db.profile.rosterString then
-        -- print("Restoring roster string...")
-        -- Restore the roster string here
-        editBox:SetText(self.db.profile.rosterString)
-    else
-        -- print("No roster string found.")
-        editBox:SetText("")
     end
 end
 
@@ -188,163 +154,6 @@ function ScrubLegionRM:SetCallBacks(window, name)
                 height = frame:GetHeight()
             }
         end
-
-        if name and name == "RosterDisplayWindow" then
-            addon.db.profile.wasOverlayDismissed = true
-            OverlayManager:HideAllOverlays()
-        end
-
-    end)
-end
-
-function ScrubLegionRM:ShowMainWindow()
-    -- Check if the main window already exists
-    if self.mainWindow then
-        self.mainWindow = Utils:SafeReleaseWidget(self.mainWindow)
-    end
-
-    -- Create the main window if it doesn't exist
-    self.mainWindow = AceGUI:Create("Frame")
-    self.mainWindow:SetTitle("Scrub Legion Roster Manager")
-    self.mainWindow:SetStatusText("Roster Management Tool")
-
-    -- Critical: Use Fill layout for the main window for proper resizing
-    self.mainWindow:SetLayout("Fill")
-
-    -- Set initial size based on saved values or defaults
-    local width = self.db.profile.windowPos.width or 600
-    local height = self.db.profile.windowPos.height or 500
-    self.mainWindow:SetWidth(width)
-    self.mainWindow:SetHeight(height)
-
-    -- Make sure the frame is resizable
-    self.mainWindow.frame:SetResizable(true)
-
-    -- Set minimum size constraints
-    if self.mainWindow.frame.SetMinResize then
-        self.mainWindow.frame:SetMinResize(400, 300)
-    end
-
-    -- Configure callbacks and window position
-    self:SetCallBacks(self.mainWindow)
-    self:ApplyWindowSettings(self.mainWindow)
-
-    -- Main content container - use Fill layout with 100% height/width
-    local mainContainer = AceGUI:Create("SimpleGroup")
-    mainContainer:SetLayout("Flow")
-    mainContainer:SetFullWidth(true)
-    mainContainer:SetFullHeight(true)
-    self.mainWindow:AddChild(mainContainer)
-
-    -- Edit box container - takes most of the space
-    local editBoxContainer = AceGUI:Create("SimpleGroup")
-    editBoxContainer:SetLayout("Fill")
-    editBoxContainer:SetFullWidth(true)
-    -- Use SetHeight with percentage of the total height instead of SetRelativeHeight
-    local editBoxHeight = height * 0.5 -- 50% of window height
-    editBoxContainer:SetHeight(editBoxHeight)
-    mainContainer:AddChild(editBoxContainer)
-
-    -- Create the actual edit box
-    local editBox = AceGUI:Create("MultiLineEditBox")
-    if not editBox then
-        print("ERROR: Failed to create EditBox!")
-        return
-    end
-
-    editBox:SetLabel("Paste Roster String:")
-    editBox:SetFullWidth(true)
-    editBox:SetFullHeight(true)
-    editBox:SetMaxLetters(0)
-    self:RestoreData(editBox)
-    editBoxContainer:AddChild(editBox)
-
-    -- Footer container - takes remaining space at bottom
-    local footerContainer = AceGUI:Create("SimpleGroup")
-    footerContainer:SetLayout("Flow")
-    footerContainer:SetFullWidth(true)
-    -- Use fixed height instead of relative height
-    footerContainer:SetHeight(height * 0.25) -- 25% of window height
-    mainContainer:AddChild(footerContainer)
-
-    -- Create a status label that fills most of the footer width
-    local statusLabel = AceGUI:Create("Label")
-    statusLabel:SetText("Ready to import roster data")
-    -- Use fixed width instead of relative width
-    statusLabel:SetWidth(width * 0.75) -- 75% of window width
-    statusLabel:SetFontObject(GameFontNormal)
-    footerContainer:AddChild(statusLabel)
-
-    -- Create the re-import button that takes remaining footer width
-    local reImportButton = AceGUI:Create("Button")
-    reImportButton:SetText("Re-Import Roster")
-    -- Use fixed width instead of relative width
-    reImportButton:SetWidth(width * 0.25) -- 25% of window width
-    footerContainer:AddChild(reImportButton)
-
-    -- Set up the callbacks
-    editBox:SetCallback("OnEnterPressed", function()
-        self:ProcessRosterString(statusLabel, editBox:GetText())
-    end)
-
-    reImportButton:SetCallback("OnClick", function()
-        self:ProcessRosterString(statusLabel, editBox:GetText())
-    end)
-
-    -- Track size changes to update the layout
-    self.mainWindow.frame:HookScript("OnSizeChanged", function(_, newWidth, newHeight)
-        -- Recalculate sizes based on new dimensions
-        editBoxContainer:SetHeight(newHeight * 0.5)
-        footerContainer:SetHeight(newHeight * 0.25)
-        statusLabel:SetWidth(newWidth * 0.75)
-        reImportButton:SetWidth(newWidth * 0.25)
-    end)
-
-    self.mainWindow:Show()
-    _G["ScrubLegionRMMainWindow"] = self.mainWindow.frame
-    tinsert(UISpecialFrames, "ScrubLegionRMMainWindow")
-end
-
-function ScrubLegionRM:ShowRosterDisplay(npcID, encounterID)
-    if self.rosterWindow then
-        self.rosterWindow = Utils:SafeReleaseWidget(self.rosterWindow)
-    end
-
-    self.rosterWindow = AceGUI:Create("Frame")
-    self.rosterWindow:SetTitle(OverlayManager:GetBossName(encounterID, self.db.profile.imported))
-    self.rosterWindow:SetStatusText("Roster Display for Boss: " .. (encounterID or "Unknown"))
-    self.rosterWindow:SetLayout("Fill")
-    self.rosterWindow:SetWidth(self.db.profile.windowPos.width or 600)
-    self.rosterWindow:SetHeight(self.db.profile.windowPos.height or 400)
-    self:SetCallBacks(self.rosterWindow, "RosterDisplayWindow")
-    self:ApplyWindowSettings(self.rosterWindow)
-
-    local rosterScroll = AceGUI:Create("ScrollFrame")
-    rosterScroll:SetLayout("Flow")
-    rosterScroll:SetFullWidth(true)
-    rosterScroll:SetFullHeight(true)
-
-    local rosterText = AceGUI:Create("Label")
-    rosterText:SetFontObject(GameFontNormal)
-    rosterText:SetFullWidth(true)
-    local text, selectedPlayers = OverlayManager:CreateRosterDisplay(encounterID, self.db.profile.imported)
-    rosterText:SetText(text or "No roster data available.")
-
-    rosterScroll:AddChild(rosterText)
-
-    self.rosterWindow:AddChild(rosterScroll)
-
-    self.rosterWindow:Show()
-
-    OverlayManager:ShowOverlays(selectedPlayers)
-
-    self:RegisterEvent("GROUP_ROSTER_UPDATE", function()
-        C_Timer.After(0.1, function()
-            if self.db.profile.wasOverlayDismissed == false and self.db.profile.lastDetectedEncounter ~= nil then
-                OverlayManager:HideAllOverlays()
-                OverlayManager:ShowOverlays(selectedPlayers)
-            end
-        end)
     end)
 end
 
@@ -352,16 +161,30 @@ function ScrubLegionRM:OnEnable()
     -- Called when the addon is enabled
     if Utils:ShouldEnableAddon() then
         print("ScrubLegionRM is enabled for this raid instance.")
-        self:ShowMainWindow()
+
+        self.db.profile.lastDetectedInstanceID = GetInstanceInfo()[8]
+        print("Last detected instance ID:", self.db.profile.lastDetectedInstanceID)
 
         self:RegisterEvent("NAME_PLATE_UNIT_ADDED", function()
             local isBossDetected, npcID, encounterID = Utils:IsBossDetected()
             if isBossDetected then
                 if encounterID ~= self.db.profile.lastDetectedEncounter then
-                    print("Boss detected! NPC ID:", npcID, "Encounter ID:", encounterID)
-                    ScrubLegionRM:ShowRosterDisplay(npcID, encounterID)
-                    self.db.profile.lastDetectedBoss = npcID
-                    self.db.profile.lastDetectedEncounter = encounterID
+                    if not UnitAffectingCombat("player") then
+                        print("Boss detected! NPC ID:", npcID, "Encounter ID:", encounterID)
+                        ScrubLegionRM:ShowMainWindow(npcID, encounterID)
+                        self.db.profile.lastDetectedBoss = npcID
+                        self.db.profile.lastDetectedEncounter = encounterID
+                    else
+                        print("Boss detected! NPC ID:", npcID, "Encounter ID:", encounterID)
+                        print("We are in combat, delaying window opening.")
+                        -- We are in combat, and need to delay the window opening
+                        self:RegisterEvent("PLAYER_REGEN_ENABLED", function()
+                            self:UnregisterEvent("PLAYER_REGEN_ENABLED")
+                            ScrubLegionRM:ShowMainWindow(npcID, encounterID)
+                            self.db.profile.lastDetectedBoss = npcID
+                            self.db.profile.lastDetectedEncounter = encounterID
+                        end)
+                    end
                 end
             end
         end)
@@ -373,59 +196,96 @@ function ScrubLegionRM:OnDisable()
     print("ScrubLegionRM is disabled.")
 end
 
-function ScrubLegionRM:slrm()
-    self:ShowMainWindow()
+function ScrubLegionRM:ShowMainWindow(npcID, encounterID)
+    local window = AceGUI:Create("Frame")
+    window:SetTitle("Scrub Legion RM")
+    window:SetStatusText("Encounter ID: " .. (encounterID or "Unknown"))
+    window:SetWidth(self.db.profile.windowPos.width or 500)
+    window:SetHeight(self.db.profile.windowPos.height or 500)
+    window:SetLayout("Fill")
+
+    self:ApplyWindowSettings(window)
+    self:SetCallBacks(window, "ScrubLegionRMMainWindow")
+
+    local innerGroup = AceGUI:Create("SimpleGroup")
+    innerGroup:SetLayout("Flow")
+
+    local editBox = AceGUI:Create("MultiLineEditBox")
+    editBox:SetFullWidth(true)
+    editBox:SetFullHeight(self.db.profile.windowPos.height - 250)
+    editBox:SetCallback("OnEnterPressed", function(_, _, text)
+        self.db.profile.customNotes[self.db.profile.selectedEncounterID] = text
+    end)
+
+    local bossTabs = AceGUI:Create("TabGroup")
+    bossTabs:SetTitle(InstanceToName[self.db.profile.lastDetectedInstanceID] or "Unknown Instance")
+    bossTabs:SetFullWidth(true)
+    local validTabs = self:BuildBossTabs(window, bossTabs, editBox, self.db.profile.lastDetectedInstanceID, encounterID)
+
+    if validTabs then
+        innerGroup:AddChild(bossTabs)
+    end
+
+    innerGroup:AddChild(editBox)
+
+    window:AddChild(innerGroup)
+    -- Show the window
+    window:Show()
+end
+
+function ScrubLegionRM:UpdateEditBoxForEncounter(window, editBox, encounterID)
+    if not editBox or not editBox.SetText then
+        print("Error: Invalid edit box provided")
+        return
+    end
+
+    local notes = self.db.profile.defaultNotes
+    if self.db.profile.customNotes[encounterID] then
+        notes = self.db.profile.customNotes[encounterID]
+    end
+
+    editBox:SetLabel("Notes for " .. (EncounterToName[encounterID] or "Unknown Encounter"))
+    editBox:SetText(notes)
+
+    window:SetStatusText("Encounter ID: " .. (encounterID or "Unknown"))
+end
+
+function ScrubLegionRM:BuildBossTabs(window, bossTabsObject, editBox, instanceID, encounterID)
+    local bossList = InstanceToBosses[instanceID] or {}
+
+    print("Building boss tabs for instance ID:", instanceID, "with bosses:", table.concat(bossList, ", "))
+    if not bossList or bossList == {} then
+        return false
+    end
+
+    local allTabs = {}
+    for _, bossID in pairs(bossList) do
+        print(bossID, "->", EncounterToName[bossID])
+        local bossName = EncounterToName[bossID] or "Unknown Boss"
+        table.insert(allTabs, {
+            value = bossID,
+            text = bossName
+        })
+    end
+
+    bossTabsObject:SetTabs(allTabs)
+    bossTabsObject:SetCallback("OnGroupSelected", function(_, _, bossID)
+        self.db.profile.selectedEncounterID = bossID
+        self:UpdateEditBoxForEncounter(window, editBox, bossID)
+    end)
+
+    bossTabsObject:SelectTab(encounterID)
+    self.db.profile.selectedEncounterID = encounterID
+
     return true
 end
 
-function ScrubLegionRM:slrmdb()
-    print("ScrubLegionRM database command executed.")
-    -- Add your command handling logic here
-    if self.db then
-        Utils:DeepPrint(self.db.profile)
-    else
-        print("No imported roster data found.")
-    end
+function ScrubLegionRM:slrm()
+    self:ShowMainWindow(self.db.profile.lastDetectedBoss, self.db.profile.lastDetectedEncounter)
     return true
 end
 
 function ScrubLegionRM:slrmclear()
-    print("ScrubLegionRM clear command executed.")
-    -- Add your command handling logic here
-    if self.db then
-        self.db.profile.imported = nil
-        self.db.profile.rosterString = nil
-        self.db.profile.windowPos.x = nil
-        self.db.profile.windowPos.y = nil
-        self.db.profile.windowPos.width = nil
-        self.db.profile.windowPos.height = nil
-        self.db.profile.lastDetectedBoss = nil
-        self.db.profile.wasOverlayDismissed = false
-        print("ScrubLegionRM database cleared.")
-    else
-        print("No database to clear.")
-    end
-    return true
-end
-
-function ScrubLegionRM:slrmtest()
-    print("ScrubLegionRM test command executed.")
-    -- Add your command handling logic here
-    return true
-end
-
-function ScrubLegionRM:showRoster()
-    self.db.profile.wasOverlayDismissed = false
-    self:ShowRosterDisplay(self.db.profile.lastDetectedBoss, self.db.profile.lastDetectedEncounter)
-end
-
-function ScrubLegionRM:slrmhelp()
-    print("ScrubLegionRM help command executed.")
-    print("Available commands:")
-    print("/slrm - Show the main window")
-    print("/slrmdb - Show the current database contents")
-    print("/roster - Show the roster display for the last detected boss")
-    print("/slrmclear - Clear the current database")
-    print("/slrmtest - Run a test command")
-    return true
+    self.db.profile.customNotes = {}
+    print("Custom notes cleared.")
 end
