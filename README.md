@@ -1,9 +1,8 @@
-Manages the roster for Scrub Legion
+Scrub Legion Reminder Addon (Notes)
+
+It pops up when the desired encounter is detected, and shows a default note, you can edit this default note to show a custom one instead for each encounter.
 
 Available slash commands
 
 - /slrm - Show the main window 
-- /slrmdb - Show the current database contents 
-- /roster - Show the roster display for the last detected boss 
 - /slrmclear - Clear the current database 
-- /slrmtest - Run a test command
