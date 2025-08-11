@@ -30,7 +30,7 @@ function ScrubLegionRM:OnInitialize()
     self:RegisterChatCommand("slrmtest", "slrmtest")
     print("ScrubLegionRM initialized. Type /slrm to open the main window.")
 
-    self.db.profile.lastDetectedInstanceID = LIBERATION_OF_UNDERMINE_ID
+    self.db.profile.lastDetectedInstanceID = MANAFORGE_OMEGA_ID
 end
 
 function ScrubLegionRM:ApplyWindowSettings(window)
@@ -198,22 +198,27 @@ function ScrubLegionRM:OnDisable()
 end
 
 function ScrubLegionRM:ShowMainWindow(encounterID)
+
     local window = AceGUI:Create("Frame")
     window:SetTitle("Scrub Legion RM")
     window:SetStatusText("Encounter ID: " .. (encounterID or "Unknown"))
     window:SetWidth(self.db.profile.windowPos.width or 500)
     window:SetHeight(self.db.profile.windowPos.height or 500)
-    window:SetLayout("Fill")
+    window.frame:SetBackdropColor(0.0, 0.0, 0.0, 1.0)
+    window:SetLayout("Flow")
 
     self:ApplyWindowSettings(window)
     self:SetCallBacks(window, "ScrubLegionRMMainWindow")
 
     local innerGroup = AceGUI:Create("SimpleGroup")
+    innerGroup:SetFullWidth(true)
+    innerGroup:SetFullHeight(true)
     innerGroup:SetLayout("Flow")
 
     local editBox = AceGUI:Create("MultiLineEditBox")
     editBox:SetFullWidth(true)
-    editBox:SetFullHeight(self.db.profile.windowPos.height - 250)
+    editBox:SetFullHeight(true)
+    editBox:SetLabel("No Encounter Selected")
     editBox:SetCallback("OnEnterPressed", function(_, _, text)
         self.db.profile.customNotes[self.db.profile.selectedEncounterID] = text
     end)
@@ -221,14 +226,10 @@ function ScrubLegionRM:ShowMainWindow(encounterID)
     local bossTabs = AceGUI:Create("TabGroup")
     bossTabs:SetTitle(InstanceToName[self.db.profile.lastDetectedInstanceID] or "Unknown Instance")
     bossTabs:SetFullWidth(true)
-    local validTabs = self:BuildBossTabs(window, bossTabs, editBox, self.db.profile.lastDetectedInstanceID, encounterID)
+    _ = self:BuildBossTabs(window, bossTabs, editBox, self.db.profile.lastDetectedInstanceID, encounterID)
 
-    if validTabs then
-        innerGroup:AddChild(bossTabs)
-    end
-
+    innerGroup:AddChild(bossTabs)
     innerGroup:AddChild(editBox)
-
     window:AddChild(innerGroup)
     -- Show the window
     window:Show()
@@ -260,10 +261,18 @@ function ScrubLegionRM:BuildBossTabs(window, bossTabsObject, editBox, instanceID
     local allTabs = {}
     for _, bossID in pairs(bossList) do
         local bossName = EncounterToName[bossID] or "Unknown Boss"
-        table.insert(allTabs, {
-            value = bossID,
-            text = bossName
-        })
+        local iconID = EncounterToIcon[bossID]
+        if iconID then
+            table.insert(allTabs, {
+                value = bossID,
+                text = "|T" .. iconID .. ":24:24:0:0|t" .. bossName,
+            })
+        else
+            table.insert(allTabs, {
+                value = bossID,
+                text = bossName
+            })
+        end
     end
 
     bossTabsObject:SetTabs(allTabs)
@@ -288,14 +297,13 @@ function ScrubLegionRM:slrmclear()
     print("Custom notes cleared.")
 end
 
-
 function ScrubLegionRM:slrmtest(input)
     local instanceID, encounterID = strsplit(" ", input)
-    
+
     -- Convert string arguments to numbers
     local instID = tonumber(instanceID)
     local encID = tonumber(encounterID)
-    
+
     self.db.profile.lastDetectedInstanceID = (instID or self.db.profile.lastDetectedInstanceID)
     self:ShowMainWindow((encID or self.db.profile.lastDetectedEncounter))
     return true
