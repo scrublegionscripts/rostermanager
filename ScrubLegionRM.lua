@@ -279,7 +279,7 @@ function ScrubLegionRM:BuildBossTabs(window, bossTabsObject, editBox, instanceID
 end
 
 function ScrubLegionRM:slrm()
-    self:ShowMainWindow(self.db.profile.lastDetectedBoss, self.db.profile.lastDetectedEncounter)
+    self:ShowMainWindow(self.db.profile.lastDetectedEncounter)
     return true
 end
 
