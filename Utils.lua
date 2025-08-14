@@ -28,7 +28,7 @@ function Utils:ShouldEnableAddon()
 
     local _, _, difficulty, _, _, _, _, instanceID = GetInstanceInfo()
 
-    return (instanceID == LIBERATION_OF_UNDERMINE_ID or instanceID == MANAFORGE_OMEGA_ID) and difficulty == 16 and instanceType == "raid"
+    return (instanceID == LIBERATION_OF_UNDERMINE_ID or instanceID == MANAFORGE_OMEGA_ID) and instanceType == "raid"
 end
 
 function Utils:IsBossDetected()
