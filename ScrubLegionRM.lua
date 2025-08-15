@@ -177,15 +177,17 @@ function ScrubLegionRM:OnEnable()
                         self.db.profile.lastDetectedBoss = npcID
                         self.db.profile.lastDetectedEncounter = encounterID
                     else
-                        print("Boss detected! NPC ID:", npcID, "Encounter ID:", encounterID)
-                        print("We are in combat, delaying window opening.")
-                        -- We are in combat, and need to delay the window opening
-                        self:RegisterEvent("PLAYER_REGEN_ENABLED", function()
-                            self:UnregisterEvent("PLAYER_REGEN_ENABLED")
-                            ScrubLegionRM:ShowMainWindow(encounterID)
-                            self.db.profile.lastDetectedBoss = npcID
-                            self.db.profile.lastDetectedEncounter = encounterID
-                        end)
+                        if EncounterToName[encounterID] ~= "Dimensius" then
+                            print("Boss detected! NPC ID:", npcID, "Encounter ID:", encounterID)
+                            print("We are in combat, delaying window opening.")
+                            -- We are in combat, and need to delay the window opening
+                            self:RegisterEvent("PLAYER_REGEN_ENABLED", function()
+                                self:UnregisterEvent("PLAYER_REGEN_ENABLED")
+                                ScrubLegionRM:ShowMainWindow(encounterID)
+                                self.db.profile.lastDetectedBoss = npcID
+                                self.db.profile.lastDetectedEncounter = encounterID
+                            end)
+                        end
                     end
                 end
             end
@@ -199,7 +201,6 @@ function ScrubLegionRM:OnDisable()
 end
 
 function ScrubLegionRM:ShowMainWindow(encounterID)
-
     local window = AceGUI:Create("Frame")
     window:SetTitle("Scrub Legion RM")
     window:SetStatusText("Encounter ID: " .. (encounterID or "Unknown"))
