@@ -26,7 +26,7 @@ function Utils:ShouldEnableAddon()
         return false
     end
 
-    local _, _, difficulty, _, _, _, _, instanceID = GetInstanceInfo()
+    local _, _, _, _, _, _, _, instanceID = GetInstanceInfo()
 
     return (instanceID == LIBERATION_OF_UNDERMINE_ID or instanceID == MANAFORGE_OMEGA_ID) and instanceType == "raid"
 end

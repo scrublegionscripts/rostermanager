@@ -163,7 +163,8 @@ function ScrubLegionRM:OnEnable()
     if Utils:ShouldEnableAddon() then
         print("ScrubLegionRM is enabled for this raid instance.")
 
-        self.db.profile.lastDetectedInstanceID = GetInstanceInfo()[8]
+        local _, _, _, _, _, _, _, instanceID = GetInstanceInfo()
+        self.db.profile.lastDetectedInstanceID = instanceID
         print("Last detected instance ID:", self.db.profile.lastDetectedInstanceID)
 
         self:RegisterEvent("NAME_PLATE_UNIT_ADDED", function()
