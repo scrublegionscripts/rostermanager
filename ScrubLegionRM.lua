@@ -168,30 +168,39 @@ function ScrubLegionRM:OnEnable()
         print("Last detected instance ID:", self.db.profile.lastDetectedInstanceID)
 
         self:RegisterEvent("NAME_PLATE_UNIT_ADDED", function()
-            local isBossDetected, npcID, encounterID = Utils:IsBossDetected()
-            if isBossDetected then
-                if encounterID ~= self.db.profile.lastDetectedEncounter then
-                    if not UnitAffectingCombat("player") then
-                        print("Boss detected! NPC ID:", npcID, "Encounter ID:", encounterID)
+            ScrubLegionRM:DisplayFrameQuery()
+        end)
+
+        self:RegisterEvent("PLAYER_TARGET_CHANGED", function()
+            ScrubLegionRM:DisplayFrameQuery()
+        end)
+
+    end
+end
+
+function ScrubLegionRM:DisplayFrameQuery()
+    local isBossDetected, npcID, encounterID = Utils:IsBossDetected()
+    if isBossDetected then
+        if encounterID ~= self.db.profile.lastDetectedEncounter then
+            if not UnitAffectingCombat("player") then
+                print("Boss detected! NPC ID:", npcID, "Encounter ID:", encounterID)
+                ScrubLegionRM:ShowMainWindow(encounterID)
+                self.db.profile.lastDetectedBoss = npcID
+                self.db.profile.lastDetectedEncounter = encounterID
+            else
+                if EncounterToName[encounterID] ~= "Dimensius" then
+                    print("Boss detected! NPC ID:", npcID, "Encounter ID:", encounterID)
+                    print("We are in combat, delaying window opening.")
+                    -- We are in combat, and need to delay the window opening
+                    self:RegisterEvent("PLAYER_REGEN_ENABLED", function()
+                        self:UnregisterEvent("PLAYER_REGEN_ENABLED")
                         ScrubLegionRM:ShowMainWindow(encounterID)
                         self.db.profile.lastDetectedBoss = npcID
                         self.db.profile.lastDetectedEncounter = encounterID
-                    else
-                        if EncounterToName[encounterID] ~= "Dimensius" then
-                            print("Boss detected! NPC ID:", npcID, "Encounter ID:", encounterID)
-                            print("We are in combat, delaying window opening.")
-                            -- We are in combat, and need to delay the window opening
-                            self:RegisterEvent("PLAYER_REGEN_ENABLED", function()
-                                self:UnregisterEvent("PLAYER_REGEN_ENABLED")
-                                ScrubLegionRM:ShowMainWindow(encounterID)
-                                self.db.profile.lastDetectedBoss = npcID
-                                self.db.profile.lastDetectedEncounter = encounterID
-                            end)
-                        end
-                    end
+                    end)
                 end
             end
-        end)
+        end
     end
 end
 
