@@ -35,15 +35,18 @@ function Utils:IsBossDetected()
     for i = 1, 40 do
         local unitID = "nameplate" .. i
         local target = UnitName("target")
-        if UnitExists(unitID) or UnitExists(target) then
+        if UnitExists(unitID) then
             local guid = UnitGUID(unitID)
-            local tguid = UnitGUID(target)
             if guid then
                 local _, _, _, _, _, npcID = string.split("-", guid)
                 if npcID and BossToEncounter[tonumber(npcID)] then
                     return true, npcID, BossToEncounter[tonumber(npcID)]
                 end
-            elseif tguid then
+            end
+        end
+        if UnitExists(target) then
+            local tguid = UnitGUID(target)
+            if tguid then
                 local _, _, _, _, _, tID = string.split("-", tguid)
                 if tID and BossToEncounter[tonumber(tID)] then
                     return true, tID, BossToEncounter[tonumber(tID)]
